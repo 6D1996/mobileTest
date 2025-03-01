@@ -59,6 +59,7 @@ dependencies {
     val coroutinesVersion = "1.6.1"
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion")
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.28.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

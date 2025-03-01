@@ -21,6 +21,8 @@ import com.example.mobiletest.data.BookingDataManager.BookingResult
 import com.example.mobiletest.model.Booking
 import com.example.mobiletest.model.Segment
 import com.example.mobiletest.service.BookingServiceImpl
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -29,22 +31,32 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingListScreen(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current) {
+    // 獲取 Context 和 SharedPreferences
     val context = LocalContext.current
     val bookingService = BookingServiceImpl(context)
     val sharedPreferences = context.getSharedPreferences("booking_prefs", Context.MODE_PRIVATE)
+    
+    // 創建 BookingDataManager 實例
     val bookingDataManager = BookingDataManager(bookingService, sharedPreferences)
 
+    // 創建 MutableState 來保存數據狀態、刷新狀態和上次更新時間
     val bookingState = remember { mutableStateOf<BookingResult>(BookingResult.Loading) }
     val isRefreshing = remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     val lastUpdateTime = remember { mutableStateOf("") }
 
-    // 獲取數據並處理結果
+    // 獲取數據並處理結果的函數
     val fetchData = {
         coroutineScope.launch {
+            // 開始刷新
             isRefreshing.value = true
+            
+            // 調用 BookingDataManager 的 getBookingDataFlow 方法獲取數據
             bookingDataManager.getBookingDataFlow(true).collectLatest { result ->
+                // 更新數據狀態
                 bookingState.value = result
+                
+                // 停止刷新
                 if (result !is BookingResult.Loading) {
                     isRefreshing.value = false
                     
@@ -83,11 +95,14 @@ fun BookingListScreen(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.curre
         fetchData()
     }
 
+    // 使用 Scaffold 創建 UI 結構
     Scaffold(
         topBar = {
+            // 創建頂部應用欄
             TopAppBar(
                 title = { Text("Booking Details") },
                 actions = {
+                    // 創建刷新按鈕
                     IconButton(onClick = { fetchData() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
@@ -95,19 +110,15 @@ fun BookingListScreen(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.curre
             )
         }
     ) { innerPadding ->
-        Box(
+        // 使用 SwipeRefresh 創建下拉刷新功能
+        SwipeRefresh(
+            state = rememberSwipeRefreshState(isRefreshing.value),
+            onRefresh = { fetchData() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (isRefreshing.value) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                )
-            }
-            
+            // 創建 Column 來垂直排列 UI 元素
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -125,11 +136,13 @@ fun BookingListScreen(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.curre
                 // 根據數據狀態顯示不同的 UI
                 when (val state = bookingState.value) {
                     is BookingResult.Loading -> {
+                        // 顯示加載指示器
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
                         }
                     }
                     is BookingResult.Error -> {
+                        // 顯示錯誤信息和重試按鈕
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
@@ -144,6 +157,7 @@ fun BookingListScreen(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.curre
                         }
                     }
                     is BookingResult.Success -> {
+                        // 顯示 Booking 數據
                         BookingContent(state.data)
                     }
                 }
@@ -152,15 +166,19 @@ fun BookingListScreen(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.curre
     }
 }
 
+// 顯示 Booking 數據的 Composable 函數
 @Composable
 fun BookingContent(booking: Booking) {
+    // 使用 LazyColumn 創建可滾動的列表
     LazyColumn {
         item {
+            // 創建 Card 來顯示 Booking 數據
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
             ) {
+                // 創建 Column 來垂直排列 Card 中的 UI 元素
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "船舶參考號: ${booking.shipReference}",
@@ -181,6 +199,7 @@ fun BookingContent(booking: Booking) {
         }
         
         item {
+            // 顯示航段列表標題
             Text(
                 text = "航段列表",
                 style = MaterialTheme.typography.titleLarge,
@@ -188,19 +207,23 @@ fun BookingContent(booking: Booking) {
             )
         }
         
+        // 創建航段列表
         items(booking.segments) { segment ->
             SegmentItem(segment)
         }
     }
 }
 
+// 顯示航段數據的 Composable 函數
 @Composable
 fun SegmentItem(segment: Segment) {
+    // 創建 Card 來顯示航段數據
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
+        // 創建 Column 來垂直排列 Card 中的 UI 元素
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "航段 ID: ${segment.id}",
@@ -208,10 +231,12 @@ fun SegmentItem(segment: Segment) {
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
+            // 創建 Row 來水平排列 UI 元素
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // 顯示出發地信息
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = "出發地", style = MaterialTheme.typography.bodySmall)
                     Text(
@@ -228,6 +253,7 @@ fun SegmentItem(segment: Segment) {
                     )
                 }
                 
+                // 顯示目的地信息
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = "目的地", style = MaterialTheme.typography.bodySmall)
                     Text(
@@ -248,7 +274,7 @@ fun SegmentItem(segment: Segment) {
     }
 }
 
-// 格式化時間戳記
+// 格式化時間戳記的函數
 fun formatTimestamp(timestamp: String): String {
     try {
         val time = timestamp.toLong() * 1000 // 轉換為毫秒
@@ -259,7 +285,7 @@ fun formatTimestamp(timestamp: String): String {
     }
 }
 
-// 格式化持續時間
+// 格式化持續時間的函數
 fun formatDuration(durationMinutes: Int): String {
     val hours = durationMinutes / 60
     val minutes = durationMinutes % 60
