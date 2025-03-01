@@ -49,6 +49,17 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.gson)
+
+    // 移除 libs.kotlinx.coroutines.core 和 libs.kotlinx.coroutines.android
+    // implementation(libs.kotlinx.coroutines.core)
+    // implementation(libs.kotlinx.coroutines.android)
+
+    // 直接添加依賴，並指定版本和源碼
+    val coroutinesVersion = "1.6.1"
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
